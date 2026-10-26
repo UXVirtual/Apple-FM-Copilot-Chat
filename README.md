@@ -40,9 +40,28 @@ npm run package            # → apple-fm-copilot-provider.vsix (darwin-arm64)
 npm run install:vscode     # package + `code --install-extension` (needs `code` on PATH)
 ```
 
-Or in VS Code: Extensions view → `…` → **Install from VSIX…**. Then reload the window, open Copilot Chat, and pick **Apple Foundation Model** from the model picker (if it isn't listed: **Manage Models** → **Apple Foundation Models** → enable it). It works in the Ask and Agent modes.
+Or in VS Code: Extensions view → `…` → **Install from VSIX…**. Then reload the window, open Copilot Chat, and pick **Apple Foundation Model** from the model picker (if it isn't listed: **Manage Models** → **Apple Foundation Models** → enable it). It works in the Ask and Agent modes of a **local** Copilot Chat session, but not in Copilot CLI sessions (see below).
 
 If macOS quarantines the binary: `xattr -dr com.apple.quarantine bin/`.
+
+## Use a local Copilot Chat session, not Copilot CLI
+
+The model also shows up in the picker for **Copilot CLI** sessions, but it doesn't work there. Copilot CLI sends a large built-in system prompt and tool definitions with every request. Those alone are bigger than the on-device model's context window, so the CLI refuses the request before it reaches this extension. The chat shows no reply, and the agent host log (**Developer: Show Logs…** → **Agent Host**) shows:
+
+```text
+Static system messages and tool definitions exceed the model's usable context budget.
+Session error: query - No response was returned.
+```
+
+Local Copilot Chat sessions go through this extension, which keeps only your messages and attachments so the request fits. To use the Apple model:
+
+1. Open the Chat view (**⌃⌘I**, or **View** → **Chat**).
+2. Start a new chat with **+** (**New Chat**).
+3. In the session type picker, choose **Local** rather than **Copilot CLI**.
+4. Pick **Ask** or **Agent** mode, then choose **Apple Foundation Model** from the model picker.
+5. Send a short test message, such as `Say hello in three words`.
+
+Each session type remembers its own model choice. Picking the Apple model in a local chat doesn't change the model used by Copilot CLI sessions, and the other way round. If a local chat still doesn't reply, run **Apple FM: Check Model Availability** and then check **Apple FM: Show Logs**.
 
 ## Using a custom bridge binary (`appleFm.bridgePath`)
 
@@ -71,6 +90,7 @@ Notes:
 
 - **4096-token context, input + output combined** for the on-device model. Newer SDK builds read the limit from the OS; Xcode 26 builds use 4096. Prompts are measured with the model's tokenizer when supported by both the build SDK and macOS, or estimated from UTF-8 length otherwise. History is dropped oldest-first, then the prompt is trimmed to leave `appleFm.maxOutputTokens` for the reply, and the reply may use all remaining room. Estimates are not exact and can still result in context-window errors.
 - **No real tool calling.** Recent Copilot builds only list tool-capable models (the classic Ask mode is gone), so the model advertises tool calling but always answers in plain text. For agent requests, Copilot's large system prompt and workspace context are dropped; only your messages, attachments and prior replies are sent.
+- **Local Copilot Chat sessions only.** Copilot CLI sessions fail with no reply because their fixed system prompt and tool definitions don't fit the context window. See [Use a local Copilot Chat session, not Copilot CLI](#use-a-local-copilot-chat-session-not-copilot-cli).
 - Stateless: each request builds a fresh session from the trimmed history.
 - macOS 27 adds a 32K-token Private Cloud Compute model, but it rejects requests from an unsigned CLI like `fm-bridge` (it appears to require an Apple entitlement), so it isn't used.
 
