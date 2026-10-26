@@ -75,28 +75,37 @@ func currentAvailability() -> AvailabilityInfo {
 
 // MARK: - Token accounting
 
-/// Fixed per-request template tokens not covered by `tokenCount(for:)` (measured: 8), plus slack.
+/// Fixed per-request template tokens not covered by the token count, plus slack.
 let templateOverhead = 16
 /// Never leave the reply less room than this, even if the caller reserved less.
 let minReplyTokens = 64
 
 func contextSize() -> Int {
-    SystemLanguageModel.default.contextSize
+    // The build script probes the selected SDK before enabling these declarations.
+    #if FM_TOKEN_APIS
+    return SystemLanguageModel.default.contextSize
+    #else
+    return 4096
+    #endif
 }
 
-/// Exact token count on macOS 26.4+, conservative estimate before that.
+/// Exact token count with the newer SDK on macOS 26.4+, otherwise a UTF-8-based estimate.
 func countTokens(prompt text: String) async -> Int {
+    #if FM_TOKEN_APIS
     if #available(macOS 26.4, *), let n = try? await SystemLanguageModel.default.tokenCount(for: text) {
         return n
     }
+    #endif
     return (text.utf8.count + 1) / 2
 }
 
 /// Instructions carry the chat template, so count them as Instructions rather than plain text.
 func countTokens(instructions text: String) async -> Int {
+    #if FM_TOKEN_APIS
     if #available(macOS 26.4, *), let n = try? await SystemLanguageModel.default.tokenCount(for: Instructions(text)) {
         return n
     }
+    #endif
     return (text.utf8.count + 1) / 2 + 48
 }
 

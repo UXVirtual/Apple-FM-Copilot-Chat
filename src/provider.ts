@@ -98,7 +98,7 @@ export class AppleFmProvider implements vscode.LanguageModelChatProvider, vscode
     const cfg = this.cfg();
     const built = buildPrompt(messages, {
       defaultSystem: cfg.systemPrompt,
-      // First pass by estimate; the bridge then trims exactly with the model's tokenizer.
+      // First pass by estimate; the bridge refines the budget using its available token counter.
       maxInputChars: this.inputBudget(cfg) * CHARS_PER_TOKEN,
       agentPrompt: (options.tools?.length ?? 0) > 0
     });

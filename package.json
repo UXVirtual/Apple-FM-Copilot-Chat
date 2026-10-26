@@ -70,7 +70,8 @@
         "appleFm.bridgePath": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Path to the `fm-bridge` binary. Leave empty to use the bundled `bin/fm-bridge` (or `swift/.build/release/fm-bridge` in a dev checkout)."
+          "scope": "machine",
+          "markdownDescription": "Absolute path to the `fm-bridge` binary. Leave empty to use the bundled `bin/fm-bridge` (or `swift/.build/release/fm-bridge` in a dev checkout). Only read from user settings; workspace settings are ignored."
         },
         "appleFm.systemPrompt": {
           "type": "string",
@@ -89,7 +90,7 @@
           "default": 0,
           "minimum": 0,
           "maximum": 32768,
-          "markdownDescription": "Cap on prompt tokens. `0` (default) uses the whole context window minus `#appleFm.maxOutputTokens#` (3096 tokens on the 4096-token on-device model). Prompts are measured with the model's own tokenizer and trimmed only when they don't fit."
+          "markdownDescription": "Cap on prompt tokens. `0` (default) uses the whole context window minus `#appleFm.maxOutputTokens#` (3096 tokens on the 4096-token on-device model). Prompts are measured with the model's tokenizer when supported by the build SDK and macOS, or estimated otherwise, and trimmed to fit."
         },
         "appleFm.maxOutputTokens": {
           "type": "number",

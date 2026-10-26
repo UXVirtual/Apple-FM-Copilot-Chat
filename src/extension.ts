@@ -1,18 +1,30 @@
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import * as vscode from 'vscode';
-import { FmBridge } from './bridge';
+import { BridgeError, FmBridge } from './bridge';
 import { AppleFmProvider, VENDOR } from './provider';
 
 export function activate(context: vscode.ExtensionContext): void {
   const log = vscode.window.createOutputChannel('Apple Foundation Models');
 
   const resolveBridgePath = (): string => {
-    const configured = vscode.workspace.getConfiguration('appleFm').get<string>('bridgePath', '').trim();
+    // Only honour the user-level value so a workspace cannot choose which executable is spawned.
+    const configured = (
+      vscode.workspace.getConfiguration('appleFm').inspect<string>('bridgePath')?.globalValue ?? ''
+    ).trim();
     if (configured) {
+      if (!path.isAbsolute(configured)) {
+        throw new BridgeError(`"appleFm.bridgePath" must be an absolute path (got "${configured}").`, 'bad_bridge_path');
+      }
       return configured;
     }
     const bundled = context.asAbsolutePath('bin/fm-bridge');
     if (fs.existsSync(bundled)) {
+      try {
+        fs.chmodSync(bundled, 0o755); // VSIX extraction can drop the executable bit
+      } catch {
+        /* best effort */
+      }
       return bundled;
     }
     return context.asAbsolutePath('swift/.build/release/fm-bridge'); // dev checkout fallback

@@ -162,11 +162,6 @@ export class FmBridge implements vscode.Disposable {
         'binary_missing'
       );
     }
-    try {
-      fs.chmodSync(bin, 0o755); // VSIX extraction can drop the executable bit
-    } catch {
-      /* best effort */
-    }
 
     this.log.appendLine(`[bridge] starting ${bin} serve`);
     const proc = cp.spawn(bin, ['serve'], { stdio: ['pipe', 'pipe', 'pipe'] });
